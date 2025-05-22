@@ -1,0 +1,52 @@
+[
+  {
+    "path": "/home/workbox/Projects/dancing_gif/kid-dance.gif",
+    "type": "gif",
+    "x": 204,
+    "y": 344,
+    "width": 150,
+    "height": 150,
+    "rotation_degrees": 0.0,
+    "order": 0
+  },
+  {
+    "path": "/home/workbox/Projects/dancing_gif/kid-dance.gif",
+    "type": "gif",
+    "x": 203,
+    "y": 493,
+    "width": 150,
+    "height": 150,
+    "rotation_degrees": 0.0,
+    "order": 1
+  },
+  {
+    "path": "/home/workbox/Projects/dancing_gif/kid-dance.gif",
+    "type": "gif",
+    "x": 353,
+    "y": 493,
+    "width": 150,
+    "height": 150,
+    "rotation_degrees": 0.0,
+    "order": 2
+  },
+  {
+    "path": "/home/workbox/Projects/dancing_gif/kid-dance.gif",
+    "type": "gif",
+    "x": 354,
+    "y": 344,
+    "width": 150,
+    "height": 150,
+    "rotation_degrees": 0.0,
+    "order": 3
+  },
+  {
+    "path": "/home/workbox/Projects/dancing_gif/drawing2.png",
+    "type": "image",
+    "x": 150,
+    "y": 293,
+    "width": 400,
+    "height": 400,
+    "rotation_degrees": 0.0,
+    "order": 4
+  }
+]
