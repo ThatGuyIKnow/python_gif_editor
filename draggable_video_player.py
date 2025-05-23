@@ -3,13 +3,15 @@ import os
 import json
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QPushButton, QVBoxLayout, QFileDialog,
-    QLabel, QFormLayout, QSpinBox, QDoubleSpinBox, QHBoxLayout
+    QLabel, QFormLayout, QSpinBox, QDoubleSpinBox, QHBoxLayout, QDialog
 )
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtCore import Qt, QUrl, QPoint, QSize, pyqtSignal
 from PyQt5.QtGui import QMovie, QTransform, QPixmap, QPainter, QPen, QColor
 import math
+
+from export_json_layout import export_sequence, compute_content_bounding_box
 
 class DraggableWidget(QWidget):
     selected = pyqtSignal(object)
@@ -170,8 +172,9 @@ class MainWindow(QMainWindow):
         self.up_button.clicked.connect(self.bring_forward)
         self.down_button = QPushButton("Send Backward")
         self.down_button.clicked.connect(self.send_backward)
-        self.export_button = QPushButton("Export Layout as JSON")
-        self.export_button.clicked.connect(self.export_layout)
+        self.export_button = QPushButton("Export")
+        self.export_dialog = ExportDialog(self)
+        self.export_button.clicked.connect(self.export_dialog.show)
         self.info_label = QLabel(
             "Open multiple videos, gifs or images to play. Drag any around.\n"
             "Resize and rotate the selected one using controls below. Use the buttons to reorder layers."
@@ -299,25 +302,81 @@ class MainWindow(QMainWindow):
             self.draggable_widgets[idx], self.draggable_widgets[idx-1] = self.draggable_widgets[idx-1], self.draggable_widgets[idx]
             self.draggable_widgets[idx].raise_()
             self.draggable_widgets[idx-1].lower()
+
+
+
+class ExportDialog(QDialog):
+
+    def __init__(self, parent=None):
+        super(ExportDialog, self).__init__(parent)
+        self.setWindowTitle("Export")
+        self.setGeometry(100, 100, 400, 400)
+        self.draggable_widgets = parent.draggable_widgets
+        self.controls = {}
+        self.controls_layout = QFormLayout()
+
+        self.controls['width'] = QSpinBox()
+        self.controls['width'].setRange(100, 1920)
+        self.controls['width'].setValue(320)
+        self.controls['height'] = QSpinBox()
+        self.controls['height'].setRange(100, 1080)
+        self.controls['height'].setValue(240)
+        self.controls['frames'] = QSpinBox()
+        self.controls['frames'].setRange(5, 1200)
+        self.controls['frames'].setValue(48)
+        
+        layout = QVBoxLayout()
+        button_bar = QHBoxLayout()
+        self.export_button = QPushButton("Export")
+        self.export_button.clicked.connect(self.export_layout)
+        button_bar.addWidget(self.export_button)
+
+
+        self.controls_layout.addRow("Width:", self.controls['width'])
+        self.controls_layout.addRow("Height:", self.controls['height'])
+        self.controls_layout.addRow("Frames:", self.controls['frames'])
+
+        layout.addLayout(self.controls_layout)
+        layout.addStretch(1)
+        layout.addLayout(button_bar)
+        central_widget = QWidget()
+        central_widget.setLayout(layout)
+        self.setLayout(layout)
+        
     def export_layout(self):
         export_data = []
         for order, widget in enumerate(self.draggable_widgets):
             entry = {
                 "path": widget.source_path,
                 "type": "gif" if widget.is_gif else ("image" if widget.is_image else "video"),
-                "x": widget.x(),
-                "y": widget.y(),
-                "width": widget._current_width,
-                "height": widget._current_height,
+                "x": int(widget.x()),
+                "y": int(widget.y()),
+                "width": int(widget._current_width),
+                "height": int(widget._current_height),
                 "rotation_degrees": widget._rotation,
                 "order": order
             }
             export_data.append(entry)
+        
+        min_x, min_y, max_x, max_y = compute_content_bounding_box(export_data)
+        x_scale = (max_x - min_x) / self.controls['width'].value()
+        y_scale = (max_y - min_y) / self.controls['height'].value()
+
+        for entry in export_data:
+            entry['x'] = int(entry['x'] * x_scale)
+            entry['width'] = int(entry['width'] * x_scale)
+            entry['y'] = int(entry['y'] * y_scale)
+            entry['height'] = int(entry['height'] * y_scale)
+
+
+
         file_dialog = QFileDialog(self)
-        save_path, _ = file_dialog.getSaveFileName(self, "Export Layout JSON", "layout_export.json","JSON Files (*.json)")
+        save_path, _ = file_dialog.getSaveFileName(self, "Export Layout JSON and Sequence", "layout_export.json","JSON Files (*.json)")
         if save_path:
             with open(save_path, "w") as f:
                 json.dump(export_data, f, indent=2)
+        self.hide()
+
 
 
 def main():

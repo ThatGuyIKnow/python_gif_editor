@@ -122,28 +122,35 @@ def composite_frame(layout_items, loaders, frame_idx, total_frames, min_x, min_y
         canvas.alpha_composite(img, (paste_x, paste_y))
     return canvas
 
-def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Render layout JSON as image sequence, cropped to content.")
-    parser.add_argument('layout_json', help="Path to exported layout JSON file.")
-    parser.add_argument('output_folder', help="Folder to write frame images into (created if doesn't exist).")
-    parser.add_argument('--frames', type=int, default=None, help="Number of frames (default=max over all media)")
-    args = parser.parse_args()
-
-    layout = parse_layout(args.layout_json)
+def export_sequence(path, frames):
+    folder_path = os.path.dirname(path)
+    layout = parse_layout(path)
     loaders = [get_loader(item) for item in layout]
-    if args.frames:
-        total_frames = args.frames
+    if frames:
+        total_frames = frames
     else:
         total_frames = max((ldr.num_frames() for ldr in loaders), default=1)
     min_x, min_y, max_x, max_y = compute_content_bounding_box(layout)
+
+    min_x = int(min_x)
+    min_y = int(min_y)
+    max_x = int(max_x)
+    max_y = int(max_y)
+
+
     canvas_size = (max_x - min_x, max_y - min_y)
-    os.makedirs(args.output_folder, exist_ok=True)
+    os.makedirs(folder_path, exist_ok=True)
     for idx in range(total_frames):
         frame = composite_frame(layout, loaders, idx, total_frames, min_x, min_y, canvas_size)
-        outpath = os.path.join(args.output_folder, f"frame_{idx:03d}.png")
+        outpath = os.path.join(folder_path, f"frame_{idx:03d}.png")
         frame.save(outpath)
         print(f"Saved {outpath}")
 
 if __name__ == '__main__':
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="Render layout JSON as image sequence, cropped to content.")
+    parser.add_argument('layout_json', help="Path to exported layout JSON file.")
+    parser.add_argument('--frames', type=int, default=None, help="Number of frames (default=max over all media)")
+    args = parser.parse_args()
+
+    export_sequence(args.layout_json, args.frames)
